@@ -176,6 +176,13 @@ const fetchWeather = async () => {
       sunset: new Date(data.sys.sunset * 1000).toLocaleTimeString(),
       visibility: (data.visibility / 1000).toFixed(1),
     };
+    const oneCallResponse = await fetch(`https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=es`);
+if (oneCallResponse.ok) {
+  const oneCallData = await oneCallResponse.json();
+  
+  weatherData.value.uvi = oneCallData.current.uvi; // Índice UV
+  weatherData.value.pop = oneCallData.daily[0].pop * 100; // Probabilidad de lluvia en porcentaje
+}
     
     fetchForecast(data.coord.lat, data.coord.lon);
   } catch (err) {
@@ -193,8 +200,8 @@ const fetchForecast = async (lat, lon) => {
 
     forecastData.value = data.list.filter((item, index) => index % 8 === 0).map(day => ({
       date: new Date(day.dt * 1000).toLocaleDateString(),
-      temp: day.main.temp,
-      description: day.weather[0].description,
+      temp_min: day.main.temp_min,
+      temp_max: day.main.temp_max,
       icon: `https://openweathermap.org/img/wn/${day.weather[0].icon}.png`
     }));
 
@@ -213,16 +220,12 @@ const fetchForecast = async (lat, lon) => {
 </script> -->
 <template>
   <div class="weather-container">
-
-    <!-- <input v-model="city" placeholder="Introduce una ciudad" />
-    <button @click="fetchWeather">Buscar</button>
-
-    <p v-if="loading">Cargando...</p>
-    <p v-if="error" style="color: red">{{ error }}</p> -->
     <div v-if="weatherData" class="weather-info">
       <h1 class="city-title">{{ city }}</h1>
+      
+     
       <h2 class="temperature-title">{{ weatherData.temp }}°C</h2>
-      <p>Mín: {{ weatherData.temp_min }}°C<span class="invisible">__</span> Máx: {{ weatherData.temp_max }}°C</p>
+      <p class="weather-temp">Mín: {{ weatherData.temp_min }}°C<span class="invisible">__</span> Máx: {{ weatherData.temp_max }}°C</p>
       <p class="weather-description">{{ weatherData.description }}</p>
 
     </div>
@@ -235,9 +238,9 @@ const fetchForecast = async (lat, lon) => {
       <swiper :modules="[Navigation, Pagination]" :slides-per-view="5" :space-between="10" class="swiper-container"
         autoplay="true">
         <swiper-slide v-for="(hour, index) in hourlyForecast" :key="index" class="hour-card">
-          <p>{{ hour.time }}</p>
-          <img :src="hour.icon" alt="Weather icon" />
-          <p>{{ hour.temp }}°C</p>
+          <p class="hour-time">{{ hour.time }}</p>
+          <img class="hour-icon" :src="hour.icon" alt="Weather icon" />
+          <p class="hour-temp">{{ hour.temp }}°C</p>
 
         </swiper-slide>
       </swiper>
@@ -253,8 +256,8 @@ const fetchForecast = async (lat, lon) => {
           <p class="forecast-date">{{ day.date }}</p>
           <img :src="day.icon" alt="icono clima" class="forecast-icon" />
         </div>
-        <p class="forecast-description">{{ day.description }}</p>
-        <p class="forecast-temp">{{ day.temp }}°C</p>
+        <p class="forecast-description">{{ day.temp_min }}°</p>
+        <p class="forecast-temp">{{ day.temp_max }}°</p>
       </div>
     </div>
 
@@ -269,36 +272,46 @@ const fetchForecast = async (lat, lon) => {
         </div>
         <div class="info-item">
           <p class="info-name">Presión</p>
-          <p class="info-data">{{ weatherData.pressure }}hPa</p>
+          <p class="info-data">{{ weatherData.pressure }} hPa</p>
         </div>
         <div class="info-item">
           <p class="info-name">Visibilidad</p>
           <p class="info-data">{{ weatherData.visibility }} km</p>
         </div>
         <div class="info-item">
-          <p class="info-name">Puesta del sol</p>
-          <p class="info-data">{{ weatherData.sunset }}</p>
+          <p class="info-name">Sensación</p>
+          <p class="info-data">{{ weatherData.feels_like }}°C</p>
+        </div>
+        <div class="info-item">
+          <p class="info-name">PRESIPITACION</p>
+          <p class="info-data">{{ weatherData.pop }}</p>
+        </div>
+        <div class="info-item">
+          <p class="info-name">UV</p>
+          <p class="info-data">{{ weatherData.uvi }}</p>
         </div>
 
-        <div class="info-item">
-          <p>💨 Viento: {{ weatherData.wind_speed }} m/s (Dirección: {{ weatherData.wind_deg }}°)</p>
-          <p v-if="weatherData.wind_gust">💨 Ráfagas: {{ weatherData.wind_gust }} m/s</p>
+        <div class="info-item-large-wind">
+          <div class="info-wind-text">
+            <p class="info-name">Viento</p>
+            <p class="info-wind-data">Velocidad {{ weatherData.wind_speed }} m/s - Rachas {{ weatherData.wind_gust }} m/s</p>
+          </div>
+          <div class="info-wind-canvas-container">
+            <canvas class="info-wind-canvas" ref="radarChartCanvas"></canvas>
+          </div>
         </div>
-        <div class="info-item">
-          <p>🌅 Amanecer: {{ weatherData.sunrise }}</p>
-          <p>🌇 Atardecer: {{ weatherData.sunset }}</p>
-        </div>
-        <div class="info-item">
-          <p>🌫️ Visibilidad: {{ weatherData.visibility }} km</p>
+        <div class="info-item-large">
+          <p class="info-name">Amanecer: {{ weatherData.sunrise }} - Atardecer: {{ weatherData.sunset }}</p>
+          <canvas class="sun-canvas" ref="chartCanvas"></canvas>
         </div>
       </div>
     </div>
   </div>
-
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import Chart from "chart.js/auto";
 import { Swiper, SwiperSlide } from "swiper/vue";
 import { Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
@@ -317,11 +330,13 @@ const weatherData = ref({
   humidity: 55,
   pressure: 1015,
   wind_speed: 4.2,
-  wind_deg: 180,
+  wind_deg: 180, // Este es el valor que necesitamos
   wind_gust: 5.8,
   sunrise: "07:15 AM",
   sunset: "06:45 PM",
   visibility: 10,
+  pop: 50,
+  uvi: 2,
 });
 
 const hourlyForecast = ref([
@@ -338,22 +353,167 @@ const hourlyForecast = ref([
 ]);
 
 const forecastData = ref([
-  { date: "LUN", temp: 25, description: "Soleado", icon: "https://openweathermap.org/img/wn/01d.png" },
-  { date: "MAR", temp: 23, description: "Parcialmente nublado", icon: "https://openweathermap.org/img/wn/02d.png" },
-  { date: "MIE", temp: 22, description: "Lluvias ligeras", icon: "https://openweathermap.org/img/wn/10d.png" },
-  { date: "JUE", temp: 24, description: "Soleado", icon: "https://openweathermap.org/img/wn/01d.png" },
-  { date: "VIE", temp: 27, description: "Soleado", icon: "https://openweathermap.org/img/wn/01d.png" },
-  { date: "SAB", temp: 26, description: "Nublado", icon: "https://openweathermap.org/img/wn/04d.png" },
-  { date: "DOM", temp: 28, description: "Soleado", icon: "https://openweathermap.org/img/wn/01d.png" },
+  { date: "LUN", temp_min: 25, temp_max: 40, icon: "https://openweathermap.org/img/wn/01d.png" },
+  { date: "MAR", temp_min: 23, temp_max: 40, icon: "https://openweathermap.org/img/wn/02d.png" },
+  { date: "MIE", temp_min: 22, temp_max: 40, icon: "https://openweathermap.org/img/wn/10d.png" },
+  { date: "JUE", temp_min: 24, temp_max: 40, icon: "https://openweathermap.org/img/wn/01d.png" },
+  { date: "VIE", temp_min: 27, temp_max: 40, icon: "https://openweathermap.org/img/wn/01d.png" },
+  { date: "SAB", temp_min: 26, temp_max: 40, icon: "https://openweathermap.org/img/wn/04d.png" },
+  { date: "DOM", temp_min: 28, temp_max: 40, icon: "https://openweathermap.org/img/wn/01d.png" },
 ]);
 
+const chartCanvas = ref(null);
+const radarChartCanvas = ref(null);
 
+onMounted(() => {
+  // Gráfica
+  if (chartCanvas.value) {
+    const ctx = chartCanvas.value.getContext("2d");
+    const currentHour = new Date().getHours();
+
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: ["1", "2", "3", "4", "w", "w", "w", "w"],
+        datasets: [
+          {
+            label: "Mi Gráfica Amanecer",
+            backgroundColor: "rgba(255, 255, 255)",
+            data: [0, 7.15, 15, currentHour, 30, 18.45, 0],
+            fill: true,
+          },
+        ],
+      },
+    });
+  }
+
+  // Gráfico Radar
+  if (radarChartCanvas.value) {
+    const ctx = radarChartCanvas.value.getContext("2d");
+
+    // Definimos etiquetas manualmente
+    const labels = [
+      "0°", "10°", "20°", "30°", "40°", "50°", "60°", "70°", "80°", "90°", "100°", "110°",
+      "120°", "130°", "140°", "150°", "160°", "170°", "180°", "190°", "200°", "210°", "220°",
+      "230°", "240°", "250°", "260°", "270°", "280°", "290°", "300°", "310°", "320°", "330°",
+      "340°", "350°"
+    ];
+
+    // Encontramos el índice más cercano a wind_deg
+    const closestIndex = labels.reduce((prev, curr) => {
+      const prevDiff = Math.abs(parseInt(prev) - weatherData.value.wind_deg);
+      const currDiff = Math.abs(parseInt(curr) - weatherData.value.wind_deg);
+      return currDiff < prevDiff ? curr : prev;
+    });
+
+    // Obtenemos el índice real de la etiqueta más cercana
+    const closestLabelIndex = labels.indexOf(closestIndex);
+
+    // Generamos un solo punto en el índice de wind_deg
+    const windData = new Array(labels.length).fill(null); // Creamos un arreglo de `null`s
+    windData[closestLabelIndex] = 100; // Asignamos el valor para el punto en wind_deg
+
+    new Chart(ctx, {
+      type: "radar", // El tipo de gráfico es radar
+      data: {
+        labels: labels, // Las etiquetas que definen los ángulos
+        datasets: [
+          {
+            label: `DIRECCION: ${weatherData.value.wind_deg}°`, // Nombre del conjunto de datos
+            data: windData, // Solo un punto con valor
+            borderColor: "red",  // Color de la línea de viento (aunque no se verá una línea)
+            backgroundColor: "rgba(255, 0, 0, 0.5)",  // Color de fondo del área
+            pointBackgroundColor: "red", // Color del único punto
+            fill: false, // No rellenamos el área
+            pointRadius: 8, // Tamaño del punto
+            pointStyle: "triangle", // Establecer estilo de triángulo
+            rotation: weatherData.value.wind_deg, // Establecer la rotación para el triángulo
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+
+        scales: {
+          r: {
+            min: 0, // Establecemos el mínimo del radio para que la línea sea visible
+            max: 100, // El valor máximo
+          },
+        },
+        elements: {
+          line: {
+            tension: 0.4, // Suavizado de la línea (aunque no se dibujará una línea completa)
+          },
+          point: {
+            radius: 8, // Tamaño del punto
+            pointStyle: "triangle", // Estilo de los puntos
+          },
+        },
+      },
+    });
+  }
+});
 </script>
 
+
 <style>
+.sun-canvas {
+  width: 150px;
+  height: 150px;
+  background-color: transparent;
+}
+
+.info-wind-canvas {
+  background-color: transparent;
+  width: 100%;
+  height: 100%;
+
+
+}
+
+.info-wind-canvas-container {
+
+  height: 200px;
+  display: flex;
+  flex-direction: row;
+  
+}
+
 body {
   margin: 0;
   padding: 0;
+}
+
+.info-wind-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.info-wind-text{
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  justify-content: start;
+}
+.info-wind-canvas-container,
+.info-wind-text {
+  
+  text-align: start;
+
+}
+
+.info-wind-data {
+  margin-top: 0;
+  font-size: 1rem;
+
+
+
+
+}
+
+.weather-temp {
+  margin-top: -20px;
 }
 
 .weather-container {
@@ -367,12 +527,22 @@ body {
   flex-direction: column;
   align-items: center;
   position: relative;
+  width: 100%;
 }
 
+.hourly {
+  width: 85%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 0;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.1), 0px 4px 6px rgba(255, 255, 255, 0.1);
+}
 .forecast,
-.hourly,
 .info {
-  width: 75%;
+  width: 85%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -395,7 +565,7 @@ body {
 
 .info-item {
   height: 100px;
-  width: 100px;
+  width: 37%;
   margin: 10px;
   background: rgba(255, 255, 255, 0.2);
   box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.1), 0px 4px 6px rgba(255, 255, 255, 0.1);
@@ -407,6 +577,40 @@ body {
   align-items: start;
 }
 
+@media (max-width: 400px) {
+  .info-item {
+    width: 35%;
+  }
+}
+
+.info-item-large {
+  height: 200px;
+  width: 85%;
+  margin: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.1), 0px 4px 6px rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: start;
+}
+
+.info-item-large-wind {
+
+  width: 85%;
+  margin: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.1), 0px 4px 6px rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
+}
+
 .info-name {
   font-size: 1rem;
   text-transform: uppercase;
@@ -414,7 +618,7 @@ body {
 }
 
 .info-data {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 500;
 }
 
@@ -505,6 +709,13 @@ body {
 
 }
 
+.hour-icon {
+  margin-top: -20px;
+}
+
+.hour-temp {
+  margin-top: -5px;
+}
 
 
 
@@ -518,13 +729,12 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-items: start;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.1);
   background: rgba(255, 255, 255, 0.2);
   padding: 5px;
   border-radius: 10px;
-  max-height: 150px;
-
-
+  max-height: 110px;
   box-sizing: border-box;
 }
 
