@@ -141,7 +141,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
-const API_KEY = ""; 
+const API_KEY = import.meta.env.VITE_API_KEY 
 const WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather";
 const FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast";
 
@@ -228,9 +228,11 @@ const fetchForecast = async (lat, lon) => {
     </div>
 
     <!-- Forecast de las próximas 10 horas -->
-    <div v-if="hourlyForecast" class="hourly-forecast">
-      <h3 class="hour-title">PREVISIÓN DE 10 HORAS</h3>
-      <swiper :modules="[Navigation, Pagination]" :slides-per-view="6" :space-between="10" class="swiper-container"
+    <div v-if="hourlyForecast" class="hourly">
+      <div class="hourly-title-container">
+        <h3 class="hourly-title">PREVISIÓN - 10 HORAS</h3>
+      </div>
+      <swiper :modules="[Navigation, Pagination]" :slides-per-view="5" :space-between="10" class="swiper-container"
         autoplay="true">
         <swiper-slide v-for="(hour, index) in hourlyForecast" :key="index" class="hour-card">
           <p>{{ hour.time }}</p>
@@ -243,23 +245,56 @@ const fetchForecast = async (lat, lon) => {
 
     <!-- Forecast para los próximos 7 días -->
     <div v-if="forecastData" class="forecast">
-      <h2>Previsión para los próximos 7 días</h2>
+      <div class="forecast-title-container">
+        <h3 class="forecast-title">Previsión - 7 DÍAS</h3>
+      </div>
       <div v-for="(day, index) in forecastData" :key="index" class="forecast-day">
-        <p class="forecast-date">{{ day.date }}</p>
-        <img :src="day.icon" alt="icono clima" class="forecast-icon" />
-        <p class="forecast-temp">🌡️ {{ day.temp }}°C</p>
-        <p class="forecast-description">☁️ {{ day.description }}</p>
+        <div class="forecast-date-container">
+          <p class="forecast-date">{{ day.date }}</p>
+          <img :src="day.icon" alt="icono clima" class="forecast-icon" />
+        </div>
+        <p class="forecast-description">{{ day.description }}</p>
+        <p class="forecast-temp">{{ day.temp }}°C</p>
+      </div>
+    </div>
+
+    <div v-if="forecastData" class="info">
+      <div class="info-title-container">
+        <h3 class="info-title">INFORMACIÓN ADICIONAL</h3>
+      </div>
+      <div class="info-container">
+        <div class="info-item">
+          <p class="info-name">Humedad</p>
+          <p class="info-data">{{ weatherData.humidity }}%</p>
+        </div>
+        <div class="info-item">
+          <p class="info-name">Presión</p>
+          <p class="info-data">{{ weatherData.pressure }}hPa</p>
+        </div>
+        <div class="info-item">
+          <p class="info-name">Visibilidad</p>
+          <p class="info-data">{{ weatherData.visibility }} km</p>
+        </div>
+        <div class="info-item">
+          <p class="info-name">Puesta del sol</p>
+          <p class="info-data">{{ weatherData.sunset }}</p>
+        </div>
+
+        <div class="info-item">
+          <p>💨 Viento: {{ weatherData.wind_speed }} m/s (Dirección: {{ weatherData.wind_deg }}°)</p>
+          <p v-if="weatherData.wind_gust">💨 Ráfagas: {{ weatherData.wind_gust }} m/s</p>
+        </div>
+        <div class="info-item">
+          <p>🌅 Amanecer: {{ weatherData.sunrise }}</p>
+          <p>🌇 Atardecer: {{ weatherData.sunset }}</p>
+        </div>
+        <div class="info-item">
+          <p>🌫️ Visibilidad: {{ weatherData.visibility }} km</p>
+        </div>
       </div>
     </div>
   </div>
-  <p>🌡️ {{ weatherData.temp }}°C (Sensación térmica: {{ weatherData.feels_like }}°C)</p>
-  <p>💧 Humedad: {{ weatherData.humidity }}%</p>
-  <p>🔽 Presión: {{ weatherData.pressure }} hPa</p>
-  <p>💨 Viento: {{ weatherData.wind_speed }} m/s (Dirección: {{ weatherData.wind_deg }}°)</p>
-  <p v-if="weatherData.wind_gust">💨 Ráfagas: {{ weatherData.wind_gust }} m/s</p>
-  <p>🌅 Amanecer: {{ weatherData.sunrise }}</p>
-  <p>🌇 Atardecer: {{ weatherData.sunset }}</p>
-  <p>🌫️ Visibilidad: {{ weatherData.visibility }} km</p>
+
 </template>
 
 <script setup>
@@ -312,7 +347,7 @@ const forecastData = ref([
   { date: "DOM", temp: 28, description: "Soleado", icon: "https://openweathermap.org/img/wn/01d.png" },
 ]);
 
-// Control del carrusel
+
 </script>
 
 <style>
@@ -321,73 +356,122 @@ body {
   padding: 0;
 }
 
+.weather-container {
+  text-align: center;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(to bottom, #006f8e, #3b82f6, #4f46e5);
+  color: white;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
 
-.forecast {
+.forecast,
+.hourly,
+.info {
+  width: 75%;
   display: flex;
   flex-direction: column;
   align-items: center;
   margin-top: 20px;
   padding: 20px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1), 0px 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.1), 0px 4px 6px rgba(255, 255, 255, 0.1);
+}
+
+.info {
+  margin-bottom: 80px;
+}
+
+.info-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  align-content: center;
+}
+
+.info-item {
+  height: 100px;
+  width: 100px;
+  margin: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.1), 0px 4px 6px rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: start;
+}
+
+.info-name {
+  font-size: 1rem;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.info-data {
+  font-size: 1.5rem;
+  font-weight: 500;
 }
 
 .forecast-day {
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: space-between;
   margin: 10px;
   padding: 10px;
   border-radius: 10px;
+  width: 95%;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.2);
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  height: 20px;
 }
 
-.forecast-date {
-  font-size: 1rem;
+.forecast-date-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: calc(100% / 3);
+}
+
+.forecast-date,
+.forecast-temp {
+  /* font-size: 1rem;
   font-weight: bold;
-  margin-bottom: 5px;
+  margin-bottom: 5px 0; */
 }
 
 .forecast-icon {
   width: 50px;
   height: 50px;
-  margin: 5px 0;
 }
 
-.forecast-temp {
-  font-size: 1.25rem;
-  margin: 5px 0;
-}
-
-.forecast-description {
-  font-size: 1rem;
-  color: hsl(211, 73%, 78%);
-  font-weight: bold;
-  margin-top: 5px;
-}
-
-.weather-container {
-  text-align: center;
-  font-family: Arial, sans-serif;
-  /* background: linear-gradient(to bottom, #95ddfa, #60a5fa, #4f46e5); */
-  background: linear-gradient(to bottom, #006f8e, #3b82f6, #4f46e5);
-  color: white;
-  padding: 0;
-  margin: 0;
-  overflow: hidden;
-  border: none;
-  /* Sin borde */
-  outline: none;
-  /* Sin contorno */
-  box-shadow: none;
-  /* Sin sombra */
+.forecast-title-container,
+.hourly-title-container,
+.info-title-container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
+  flex-direction: row;
+  border-radius: 10px;
+  width: 100%;
+  margin-top: -10px;
 }
+
+.forecast-title,
+.hourly-title,
+.info-title {
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  color: hsl(211, 73%, 78%);
+  margin-left: 5px;
+}
+
+.info-container {}
 
 .invisible {
   opacity: 0;
@@ -396,14 +480,12 @@ body {
 .city-title {
   font-size: 3rem;
   font-weight: 100;
-
 }
 
 .temperature-title {
   font-size: 2.25rem;
   margin-top: -25px;
   font-weight: 700;
-
 }
 
 .weather-description {
@@ -414,24 +496,17 @@ body {
   margin-top: -15px;
 }
 
-.weather-info,
-.forecast {
+.weather-info {
   border-radius: 10px;
   /* box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.1); */
   width: 95vw;
   margin-bottom: 40px;
+  margin-top: 40px;
 
 }
 
-.hourly-forecast {
-  width: 95vw;
-  overflow: hidden;
-  margin-top: 20px;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
-  border-radius: 10PX;
-  backdrop-filter: blur(4px);
 
-}
+
 
 .swiper-container {
   width: 100%;
@@ -444,7 +519,7 @@ body {
   flex-direction: column;
   align-items: center;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.1);
-
+  background: rgba(255, 255, 255, 0.2);
   padding: 5px;
   border-radius: 10px;
   max-height: 150px;
@@ -453,12 +528,7 @@ body {
   box-sizing: border-box;
 }
 
-.forecast-day {
-  padding: 10px;
-  margin: 5px;
-  display: inline-block;
 
-}
 
 input {
   margin: 10px;
