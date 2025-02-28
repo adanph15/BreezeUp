@@ -101,7 +101,7 @@ import "swiper/css/pagination";
 import CitySearch from "./CitySearch.vue";
 
 const city = ref("Madrid");
-const API_KEY = process.env.API_KEY;
+const API_KEY = "4a62502d1d5736092df5f1cdf72001fa";
 const WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather";
 const FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast";
 const weatherData = ref(null);
