@@ -2,6 +2,10 @@
 
 BreezeUp is a real-time weather application that allows users to obtain detailed weather information for any city. The application displays current data, hourly forecasts, and an extended 5-day prediction, including additional information such as humidity, pressure, visibility, and thermal sensation.
 
+## Demo
+
+[BreezeUp](https://breeze-up.vercel.app).
+
 ## Features
 
 - **City Search:** Allows users to select and search for a city to obtain its weather information.
