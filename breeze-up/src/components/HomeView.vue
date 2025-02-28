@@ -490,7 +490,7 @@ body {
     color: hsl(211, 73%, 78%);
     text-transform: capitalize;
     font-weight: bold;
-    margin-top: -16px;
+    margin-top: -14px;
 }
 
 .weather-info {
