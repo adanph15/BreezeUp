@@ -1,54 +1,41 @@
 # BreezeUp
 
-## Description
-BreezeUp provides real-time weather information, hourly forecasts, and a 5-day weather outlook for any city worldwide. The app is built using Vue.js and integrates with the OpenWeather API to fetch weather data.
+BreezeUp is a real-time weather application that allows users to obtain detailed weather information for any city. The application displays current data, hourly forecasts, and an extended 5-day prediction, including additional information such as humidity, pressure, visibility, and thermal sensation.
 
 ## Features
-- **Real-time Weather Data**: Displays current temperature, weather conditions, wind speed, humidity, and visibility.
-- **Hourly Forecast**: Provides a 10-hour weather forecast with temperature and weather icons.
-- **5-Day Forecast**: Displays daily weather conditions, including minimum and maximum temperatures.
-- **Dynamic Background**: Changes background color based on time of day (morning, evening, night).
-- **Search Functionality**: Users can search for weather information by city name.
+
+- **City Search:** Allows users to select and search for a city to obtain its weather information.
+- **Current Weather Data:** Displays temperature, thermal sensation, humidity, atmospheric pressure, wind speed, and visibility.
+- **Hourly Forecast:** Provides a breakdown of temperature and weather conditions for the next 10 hours.
+- **5-Day Forecast:** Offers detailed mid-term weather forecast data.
+- **Additional Information:** Includes wind data, humidity, pressure, and sunrise/sunset times.
+- **Dynamic Interface:** The application changes its background according to the time of day (morning, afternoon, night) to enhance user experience.
 
 ## Technologies Used
-- Vue.js 3
-- Vue Router
-- Swiper.js (for carousel views)
-- OpenWeather API
-- HTML, CSS, JavaScript
 
-## Installation
-### Prerequisites
-Make sure you have **Node.js** and **npm** installed on your system.
+- **Vue 3** with Composition API.
+- **OpenWeatherMap API** for retrieving weather data.
+- **Swiper.js** for displaying the hourly forecast.
+- **Custom CSS** for a responsive and attractive design.
 
-### Steps
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-repo/breezeup.git
-   cd breezeup
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
-4. Open your browser and go to:
-   ```
-   http://localhost:5173
-   ```
-
-## API Key Setup
-This app uses OpenWeather API to fetch weather data. Replace `API_KEY` in `script setup` with your OpenWeather API key.
 
 ## Usage
-1. Open the app and enter a city name in the search field.
-2. Click the search button to fetch weather data.
-3. View real-time weather details, hourly forecasts, and 5-day predictions.
-4. The app dynamically updates backgrounds based on the time of day.
+
+1. When opening the application, the weather for the default city (Madrid) will be displayed.
+2. You can search for another city by clicking on the search button.
+3. The application will display detailed weather information, an hourly forecast, and a 5-day forecast.
+4. The interface will automatically update with the retrieved information.
+
 
 ## License
+
 This project is licensed under the MIT License.
+
+## Author
+
+Developed by [Adán Pérez](https://github.com/adanph15/).
+
+---
+
+Enjoy BreezeUp and stay informed about the weather anytime, anywhere!
 

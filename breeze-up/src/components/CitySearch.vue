@@ -3,6 +3,7 @@
     <div class="city-search">
       <input v-model="query" @input="fetchCities" placeholder="Buscar ciudad..." class="input" />
       <button @click="searchCity" class="search-btn">Buscar</button>
+      <p v-if="error" class="error-message">No se encontraron resultados. Intenta otra ciudad.</p>
       <ul v-if="cities.length" class="results">
         <li v-for="city in cities" :key="city.id" @click="selectCity(city)">
           {{ city.name }}, {{ city.country }}
@@ -20,46 +21,60 @@ export default {
     return {
       query: "",
       cities: [],
+      error: false,
     };
   },
   methods: {
-  async fetchCities() {
-    if (this.query.length < 3) {
+    async fetchCities() {
+      if (this.query.trim().length < 3) {
+        this.cities = [];
+        this.error = false;
+        return;
+      }
+      const apiKey = process.env.API_KEY;
+      const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(this.query.trim())}&limit=5&appid=${apiKey}`;
+      
+      try {
+        const response = await axios.get(url);
+        if (response.data && response.data.length > 0) {
+          this.cities = response.data.map((city) => ({
+            id: `${city.lat},${city.lon}`,
+            name: city.name,
+            country: city.country,
+            lat: city.lat,
+            lon: city.lon,
+          }));
+          this.error = false;
+        } else {
+          this.cities = [];
+          this.error = true;
+        }
+      } catch (error) {
+        console.error("Error al buscar ciudades", error);
+        this.error = true;
+      }
+    },
+    selectCity(city) {
+      this.$emit("city-selected", city);
+      this.query = city.name;
       this.cities = [];
-      return;
+      this.error = false;
+    },
+    searchCity() {
+      if (!this.cities.length) {
+        this.error = true;
+      } else {
+        this.error = false;
+        this.$emit("city-selected", this.cities[0]);
+      }
+    },
+    closeSearchPopup() {
+      this.$emit("close");
     }
-    const apiKey = process.env.VUE_APP_API_KEY;
-    const url = `https://api.openweathermap.org/geo/1.0/direct?q=${this.query}&limit=5&appid=${apiKey}`;
-
-    try {
-      const response = await axios.get(url);
-      this.cities = response.data.map((city) => ({
-        id: city.lat + city.lon,
-        name: city.name,
-        country: city.country,
-        lat: city.lat,
-        lon: city.lon,
-      }));
-    } catch (error) {
-      console.error("Error al buscar ciudades", error);
-    }
-  },
-  selectCity(city) {
-    this.$emit("city-selected", city);
-    this.query = city.name;
-    this.cities = [];
-  },
-  searchCity() {
-    if (this.query.trim()) {
-      this.$emit("city-selected", { name: this.query });
-    }
-  },
-  closeSearchPopup() {
-    this.$emit("close");
   }
-}
 };
 </script>
+
 <style scoped>
 .overlay {
   position: fixed;
@@ -84,7 +99,24 @@ export default {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  width: 350px;
+    
+}
+
+@media (max-width: 768px) {
+  .city-search {
+  margin-top: 20vh;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  background-image: linear-gradient(to bottom left, #115e59, #0c4a6e);
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   width: 85%;
+}
+
 }
 
 .input {
@@ -94,7 +126,7 @@ export default {
   color: white;
   border: 1px solid #ccc;
   border-radius: 10px;
-  font-size: 16px; 
+  font-size: 16px;
 }
 
 .search-btn {
@@ -127,5 +159,11 @@ export default {
 .results li {
   padding: 10px;
   cursor: pointer;
+}
+
+.error-message {
+  color: red;
+  margin-top: 10px;
+  font-size: 14px;
 }
 </style>

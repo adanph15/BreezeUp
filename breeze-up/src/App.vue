@@ -6,13 +6,12 @@
 
 <script setup>
 import { onMounted } from 'vue';
-import HomeView from './HomeView.vue';
+import HomeView from './components/HomeView.vue';
 
-// Cambiar el favicon cuando el componente se monte
 onMounted(() => {
   const link = document.querySelector("link[rel='icon']");
   if (link) {
-    link.href = "/img/icons/logo.png";  // Ruta absoluta del favicon
+    link.href = "/img/icons/logo.png";
   }
 });
 </script>
