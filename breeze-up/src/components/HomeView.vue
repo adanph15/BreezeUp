@@ -163,12 +163,17 @@ const fetchWeather = async () => {
 };
 
 function getWindDirection(degrees) {
-    if (degrees >= 0 && degrees < 45 || degrees >= 315 && degrees < 360) return 'N ▲';
-    if (degrees >= 45 && degrees < 135) return 'E ▶';
-    if (degrees >= 135 && degrees < 225) return 'S ▼';
-    if (degrees >= 225 && degrees < 315) return 'O ◀';
+    if ((degrees >= 0 && degrees < 22.5) || (degrees >= 337.5 && degrees < 360)) return 'S ▼'; // Viento del N, va al Sur
+    if (degrees >= 22.5 && degrees < 67.5) return 'SO ▼◀'; // Viento del NE, va al SO
+    if (degrees >= 67.5 && degrees < 112.5) return 'O ◀'; // Viento del E, va al O
+    if (degrees >= 112.5 && degrees < 157.5) return 'NO ▲◀'; // Viento del SE, va al NO
+    if (degrees >= 157.5 && degrees < 202.5) return 'N ▲'; // Viento del S, va al N
+    if (degrees >= 202.5 && degrees < 247.5) return 'NE ▲▶'; // Viento del SO, va al NE
+    if (degrees >= 247.5 && degrees < 292.5) return 'E ▶'; // Viento del O, va al E
+    if (degrees >= 292.5 && degrees < 337.5) return 'SE ▼▶'; // Viento del NO, va al SE
     return '';
 }
+
 
 function updateBackground(weatherData) {
     if (!weatherData || !weatherData.value) {
