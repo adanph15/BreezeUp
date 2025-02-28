@@ -31,7 +31,7 @@ export default {
         this.error = false;
         return;
       }
-      const apiKey = process.env.API_KEY;
+      const apiKey = "4a62502d1d5736092df5f1cdf72001fa";
       const url = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(this.query.trim())}&limit=5&appid=${apiKey}`;
       
       try {
